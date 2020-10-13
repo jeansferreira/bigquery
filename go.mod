@@ -1,4 +1,4 @@
-module gitlab.neoway.com.br/dataplatform/bigquery
+module github.com/jeansferreira/bigquery
 
 go 1.14
 

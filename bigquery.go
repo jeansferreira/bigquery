@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 )
 
+//export GOOGLE_APPLICATION_CREDENTIALS=/home/jean-ferreira/go/src/github.com/jeansferreira/bigquery/projeto-bigquery-291719-accfbedbbde6.json
+
+//Get project ID
 func GetProjectID() (projectBQID string, projectDSID string, projectNotFound error) {
 	projectIDEnvBQ := "GCP_BIGQUERY_PROJECT_ID"
 	projectIDEnvBQDS := "GCP_BQ_DATASET_PROJECT_ID"
@@ -46,6 +50,49 @@ func ConnectBQ(projectID string) (context.Context, *bigquery.Client, error) {
 // query returns a row iterator suitable for reading query results.
 func QueryBQ(ctx context.Context, client *bigquery.Client, query string) (*bigquery.RowIterator, error) {
 
-	statement := client.Query(query)
-	return statement.Read(ctx)
+	projectBQID, projectDSID, err := GetProjectID()
+	if err != nil {
+		log.Fatalf("bigquery.QueryBQ: %v", err)
+	}
+
+	query = strings.Replace(query, "projectBQID", projectBQID, -1)
+	query = strings.Replace(query, "projectDSID", projectDSID, -1)
+
+	ctx, client, err = ConnectBQ(projectBQID)
+	if err != nil {
+		log.Fatalf("bigquery.ConnectBQ: %v", err)
+	}
+
+	q := client.Query(query)
+	it, err := q.Read(ctx)
+	if err != nil {
+		log.Fatalf("bigquery.Read: %v", err)
+	}
+	return it, err
 }
+
+// func main() {
+// 	//variavel
+// 	projectID := os.Getenv("GCP_STORAGE_PROJECT_ID")
+
+// 	_query := "SELECT full_name, age FROM projectBQID.projectDSID.pessoa"
+
+// 	ctx, client, err := ConnectBQ(projectID)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 		os.Exit(1)
+// 	}
+
+// 	it, err := QueryBQ(ctx, client, _query)
+// 	for {
+// 		var values []bigquery.Value
+// 		err := it.Next(&values)
+// 		if err == iterator.Done {
+// 			break
+// 		}
+// 		if err != nil {
+// 			log.Fatalf("bigquery.iterator: %v", err)
+// 		}
+// 		fmt.Println(values)
+// 	}
+// }
